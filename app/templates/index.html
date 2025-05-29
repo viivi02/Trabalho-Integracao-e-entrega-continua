@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Pessoas</title></head>
+<body>
+<h1>Lista de Pessoas</h1>
+<form method="POST" action="/add">
+  Nome: <input name="nome">
+  Email: <input name="email">
+  <button type="submit">Adicionar</button>
+</form>
+<ul>
+  {% for pessoa in pessoas %}
+    <li>{{ pessoa.nome }} - {{ pessoa.email }}</li>
+  {% endfor %}
+</ul>
+</body>
+</html>

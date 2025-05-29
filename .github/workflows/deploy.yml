@@ -1,0 +1,52 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Código
+      uses: actions/checkout@v3
+
+    - name: Login no Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Build da imagem
+      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/meu_projeto .
+
+    - name: Push da imagem
+      run: docker push ${{ secrets.DOCKER_USERNAME }}/meu_projeto
+
+    - name: SSH no servidor e executar análise SonarQube
+      uses: appleboy/ssh-action@master
+      with:
+        host: 201.23.3.86
+        username: aluno
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          docker run -d --name sonarqube -p 9000:9000 sonarqube
+          sleep 30
+          sonar-scanner \
+            -Dsonar.projectKey=meu_projeto \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=http://localhost:9000 \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          docker stop sonarqube && docker rm sonarqube
+
+    - name: Deploy remoto
+      if: success()
+      uses: appleboy/ssh-action@master
+      with:
+        host: 201.23.3.86
+        username: aluno
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          docker stop meu_projeto || true
+          docker rm meu_projeto || true
+          docker pull ${{ secrets.DOCKER_USERNAME }}/meu_projeto
+          docker run -d --name meu_projeto -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/meu_projeto
