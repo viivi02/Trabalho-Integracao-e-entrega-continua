@@ -1,22 +1,32 @@
-version: "3.8"
-
 services:
-  web:
-    build: .
-    ports:
-      - "5000:5000"
+  db:
+    image: postgres:15
     environment:
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
-      - DB_PORT=${DB_PORT}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crud_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - appnet
+
+  app:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PGUSER=postgres
+      - PGPASSWORD=postgres
+      - PGDATABASE=crud_db
+      - PGPORT=5432
+      - PGHOST=db
     depends_on:
       - db
+    networks:
+      - appnet
 
-  db:
-    image: mysql:8
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3307:3306"
+networks:
+  appnet:
+    driver: bridge

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>CRUD App</title>
+</head>
+<body>
+  <h1>Usuários</h1>
+  <form id="form">
+    <input type="text" id="name" placeholder="Nome" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <button type="submit">Adicionar</button>
+  </form>
+<h3>Editar Usuário</h3>
+<input type="number" id="editId" placeholder="ID do usuário">
+<input type="text" id="editName" placeholder="Novo nome">
+<input type="email" id="editEmail" placeholder="Novo email">
+<button onclick="editarUsuario()">Editar</button>
+  <ul id="userList"></ul>
+
+<script>
+  async function fetchUsers() {
+    const res = await fetch('/users');
+    const users = await res.json();
+    const list = document.getElementById('userList');
+    list.innerHTML = '';
+    users.forEach(user => {
+      const li = document.createElement('li');
+        li.innerHTML = `
+        ${user.name} (${user.email})
+        <button onclick="deleteUser(${user.id})">Deletar</button>
+        `;
+      list.appendChild(li);
+    });
+  }
+
+function editarUsuario() {
+  const id = document.getElementById('editId').value;
+  const name = document.getElementById('editName').value;
+  const email = document.getElementById('editEmail').value;
+
+  fetch(`/usuarios/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email })
+  })
+  .then(res => res.json())
+  .then(data => {
+    alert(data.mensagem);
+    fetchUsers();
+  });
+}
+    async function deleteUser(id) {
+    if (confirm('Tem certeza que deseja deletar este usuário?')) {
+        const res = await fetch(`/users/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+        fetchUsers();
+        } else {
+        alert('Erro ao deletar usuário');
+        }
+    }
+    }
+
+
+  document.getElementById('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    await fetch('/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email })
+    });
+    document.getElementById('name').value = '';
+    document.getElementById('email').value = '';
+    fetchUsers();
+  });
+
+  fetchUsers();
+</script>
+
+</body>
+</html>

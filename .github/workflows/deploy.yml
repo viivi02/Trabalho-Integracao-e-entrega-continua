@@ -2,51 +2,71 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Código
-      uses: actions/checkout@v3
+      - name: Checkout código
+        uses: actions/checkout@v3
 
-    - name: Login no Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      - name: Login no Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
-    - name: Build da imagem
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/meu_projeto .
+      - name: Build da imagem
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-app:latest ./backend
 
-    - name: Push da imagem
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/meu_projeto
+      - name: Push da imagem
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
 
-    - name: SSH no servidor e executar análise SonarQube
-      uses: appleboy/ssh-action@master
-      with:
-        host: 201.23.3.86
-        username: aluno
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          docker run -d --name sonarqube -p 9000:9000 sonarqube
-          sleep 30
-          sonar-scanner \
-            -Dsonar.projectKey=meu_projeto \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=http://localhost:9000 \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
-          docker stop sonarqube && docker rm sonarqube
+  sonar-analysis:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar análise SonarQube no servidor remoto
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker run -d --name sonarqube -p 9000:9000 sonarqube:community
+            echo "Aguardando SonarQube iniciar..."
+            sleep 60  # Tempo para o SonarQube subir completamente
 
-    - name: Deploy remoto
-      if: success()
-      uses: appleboy/ssh-action@master
-      with:
-        host: 201.23.3.86
-        username: aluno
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          docker stop meu_projeto || true
-          docker rm meu_projeto || true
-          docker pull ${{ secrets.DOCKER_USERNAME }}/meu_projeto
-          docker run -d --name meu_projeto -p 5000:5000 ${{ secrets.DOCKER_USERNAME }}/meu_projeto
+            cd /home/aluno/projeto-crud/backend
+            sonar-scanner \
+              -Dsonar.projectKey=crud-node-app \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=http://localhost:9000 \
+              -Dsonar.login=admin \
+              -Dsonar.password=admin
+
+            RESULT=$(curl -s http://localhost:9000/api/qualitygates/project_status?projectKey=crud-node-app | jq -r .projectStatus.status)
+
+            docker stop sonarqube
+            docker rm sonarqube
+
+            if [ "$RESULT" != "OK" ]; then
+              echo "SonarQube falhou com status: $RESULT"
+              exit 1
+            fi
+
+  deploy:
+    needs: sonar-analysis
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Deploy remoto via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker stop crud-app || true
+            docker rm crud-app || true
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
+            docker run -d --name crud-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
