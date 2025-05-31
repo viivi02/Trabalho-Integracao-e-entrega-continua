@@ -40,17 +40,15 @@ jobs:
             sleep 60  # Tempo para o SonarQube subir completamente
             
             cd app
-            sudo apt-get update
-            sudo apt-get install -y unzip openjdk-11-jre wget
-            sudo apt-get install -y jq
-            sonar-scanner \
+            docker run --rm -v "$(pwd)":/usr/src -w /usr/src \
+              sonarsource/sonar-scanner-cli \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
               -Dsonar.host.url=http://localhost:8236 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
 
-            RESULT=$(curl -s http://localhost:8236/api/qualitygates/project_status?projectKey=crud-node-app | jq -r .projectStatus.status)
+            RESULT=$(curl -s http://localhost:8236/api/qualitygates/project_status?projectKey=crud-node-app | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
 
             docker stop sonarqube
             docker rm sonarqube
@@ -58,6 +56,8 @@ jobs:
             if [ "$RESULT" != "OK" ]; then
               echo "SonarQube falhou com status: $RESULT"
               exit 1
+            else
+            echo "Código aprovado"
             fi
 
   deploy:
