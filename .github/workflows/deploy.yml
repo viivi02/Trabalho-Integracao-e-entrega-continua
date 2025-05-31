@@ -46,8 +46,11 @@ jobs:
             else
               echo "SonarQube já está rodando."
             fi
+            
 
             cd app
+            docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' sonarqube
+
             docker run --rm -v "$(pwd)":/usr/src -w /usr/src \
               sonarsource/sonar-scanner-cli \
               -Dsonar.projectKey=crud-node-app \
