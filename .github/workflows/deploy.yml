@@ -19,7 +19,7 @@ jobs:
 
 
       - name: Build da imagem
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-app:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-app .
 
       - name: Push da imagem
         run: docker push ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
