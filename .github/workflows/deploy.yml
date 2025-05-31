@@ -39,7 +39,7 @@ jobs:
             echo "Aguardando SonarQube iniciar..."
             sleep 60  # Tempo para o SonarQube subir completamente
 
-            cd .\backend
+            cd . \backend
             sonar-scanner \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
@@ -72,5 +72,5 @@ jobs:
             docker stop crud-app || true
             docker rm crud-app || true
 
-            docker pull ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
-            docker run -d --name crud-app -p 8236:8241 ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
+            docker run -d --name crud-app -p 8236:8241 ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
