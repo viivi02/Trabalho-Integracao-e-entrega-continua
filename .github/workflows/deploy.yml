@@ -38,7 +38,8 @@ jobs:
             docker run -d --name sonarqube -p 8236:8241 sonarqube:community
             echo "Aguardando SonarQube iniciar..."
             sleep 60  # Tempo para o SonarQube subir completamente
-
+            
+            ls 
             cd backend
             sonar-scanner \
               -Dsonar.projectKey=crud-node-app \
