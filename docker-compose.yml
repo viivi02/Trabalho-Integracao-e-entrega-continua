@@ -13,7 +13,9 @@ services:
       - appnet
 
   app:
-    build: ./backend
+    build: 
+      context: ./backend
+      image: vivii02/crud-app:latest
     ports:
       - "8236:3000"
     environment:
