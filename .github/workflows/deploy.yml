@@ -39,7 +39,7 @@ jobs:
             echo "Aguardando SonarQube iniciar..."
             sleep 60  # Tempo para o SonarQube subir completamente
 
-            cd trabalhoDeploy\backend
+            cd .\backend
             sonar-scanner \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
