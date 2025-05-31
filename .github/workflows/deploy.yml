@@ -27,23 +27,23 @@ jobs:
       - name: Executar análise SonarQube no servidor remoto
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SONAR_HOST_URL }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker run -d --name sonarqube -p 9000:9000 sonarqube:community
+            docker run -d --name sonarqube -p 8236:8241 sonarqube:community
             echo "Aguardando SonarQube iniciar..."
             sleep 60  # Tempo para o SonarQube subir completamente
 
-            cd /home/aluno/projeto-crud/backend
+            cd trabalhoDeploy\backend
             sonar-scanner \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
-              -Dsonar.host.url=http://localhost:9000 \
+              -Dsonar.host.url=http://localhost:8236 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
 
-            RESULT=$(curl -s http://localhost:9000/api/qualitygates/project_status?projectKey=crud-node-app | jq -r .projectStatus.status)
+            RESULT=$(curl -s http://localhost:8236/api/qualitygates/project_status?projectKey=crud-node-app | jq -r .projectStatus.status)
 
             docker stop sonarqube
             docker rm sonarqube
@@ -61,7 +61,7 @@ jobs:
       - name: Deploy remoto via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SONAR_HOST_URL }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
@@ -69,4 +69,4 @@ jobs:
             docker rm crud-app || true
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
-            docker run -d --name crud-app -p 3000:3000 ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
+            docker run -d --name crud-app -p 8236:8241 ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
