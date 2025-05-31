@@ -40,6 +40,9 @@ jobs:
             sleep 60  # Tempo para o SonarQube subir completamente
             
             cd app
+            sudo apt-get update
+            sudo apt-get install -y unzip openjdk-11-jre wget
+            sudo apt-get install -y jq
             sonar-scanner \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
