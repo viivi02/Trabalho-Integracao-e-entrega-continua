@@ -19,10 +19,10 @@ jobs:
 
 
       - name: Build da imagem
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-app .
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest ./backend
 
       - name: Push da imagem
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/crud-app:latest
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
 
   sonar-analysis:
     needs: build-and-push
