@@ -39,6 +39,14 @@ jobs:
             echo "Aguardando SonarQube iniciar..."
             sleep 60  # Tempo para o SonarQube subir completamente
             
+            if ! docker ps --format '{{.Names}}' | grep -q '^sonarqube$'; then
+              docker run -d --name sonarqube -p 8236:9000 sonarqube:community
+              echo "SonarQube iniciado."
+              sleep 60  # Aguarda SonarQube subir
+            else
+              echo "SonarQube já está rodando."
+            fi
+
             cd app
             docker run --rm -v "$(pwd)":/usr/src -w /usr/src \
               sonarsource/sonar-scanner-cli \
