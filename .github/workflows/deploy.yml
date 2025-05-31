@@ -55,11 +55,11 @@ jobs:
               sonarsource/sonar-scanner-cli \
               -Dsonar.projectKey=crud-node-app \
               -Dsonar.sources=. \
-              -Dsonar.host.url=http://localhost:8236 \
+              -Dsonar.host.url=http://172.17.0.9:8236 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
 
-            RESULT=$(curl -s http://localhost:8236/api/qualitygates/project_status?projectKey=crud-node-app | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
+            RESULT=$(curl -s http://172.17.0.9:8236/api/qualitygates/project_status?projectKey=crud-node-app | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
 
             docker stop sonarqube
             docker rm sonarqube
