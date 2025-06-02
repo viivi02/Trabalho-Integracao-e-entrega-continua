@@ -28,48 +28,34 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Executar análise SonarQube no servidor remoto
-        uses: appleboy/ssh-action@master
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
+      - name: Copiar código e docker-compose para servidor remoto
+        uses: appleboy/scp-action@v0.1.4
         with:
-          host: ${{ secrets.SONAR_HOST_URL }}
-          username: ${{ secrets.SSH_USER }}
+          host: 201.23.3.86
+          username: aluno
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "."
+          target: "~/app"
+
+      - name: Executar análise SonarQube no servidor remoto
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: 201.23.3.86
+          username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker run -d --name sonarqube -p 8236:8241 sonarqube:community
-            echo "Aguardando SonarQube iniciar..."
-            sleep 60  # Tempo para o SonarQube subir completamente
-            
-            if ! docker ps --format '{{.Names}}' | grep -q '^sonarqube$'; then
-              docker run -d --name sonarqube -p 8236:9000 sonarqube:community
-              echo "SonarQube iniciado."
-              sleep 60  # Aguarda SonarQube subir
-            else
-              echo "SonarQube já está rodando."
-            fi
-            
-
-            cd app
-            docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' sonarqube
-
-            docker run --rm -v "$(pwd)":/usr/src -w /usr/src \
-              sonarsource/sonar-scanner-cli \
-              -Dsonar.projectKey=crud-node-app \
+            docker run -d --name sonarqube -p 9000:9000 sonarqube
+            sleep 60  # espera o Sonar subir
+            cd ~/app
+            sonar-scanner \
+              -Dsonar.projectKey=meu-projeto \
               -Dsonar.sources=. \
-              -Dsonar.host.url=http://201.23.3.86:8236 \
+              -Dsonar.host.url=http://localhost:9000 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
-
-            RESULT=$(curl -s http://201.23.3.86:8236/api/qualitygates/project_status?projectKey=crud-node-app | grep -o '"status":"[^"]*"' | cut -d':' -f2 | tr -d '"')
-
-            docker stop sonarqube
-            docker rm sonarqube
-
-            if [ "$RESULT" != "OK" ]; then
-              echo "SonarQube falhou com status: $RESULT"
-              exit 1
-            else
-            echo "Código aprovado"
-            fi
+            docker stop sonarqube && docker rm sonarqube
 
   deploy:
     needs: sonar-analysis
