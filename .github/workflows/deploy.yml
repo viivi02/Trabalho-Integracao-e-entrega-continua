@@ -69,8 +69,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker stop crud-app || true
-            docker rm crud-app || true
-
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
-            docker run -d --name crud-app -p 8236:3000 ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
+            cd ~/app
+            docker compose down || true
+            docker compose pull
+            docker compose up -d
