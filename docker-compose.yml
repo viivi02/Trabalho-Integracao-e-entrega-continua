@@ -15,9 +15,9 @@ services:
   app:
     build: 
       context: ./backend
-      image: vivii02/crud-app:latest
+    image: vivii02/trabalhovollovivi:latest
     ports:
-      - "8236:3000"
+      - "8236:8241"
     environment:
       - PGUSER=postgres
       - PGPASSWORD=postgres

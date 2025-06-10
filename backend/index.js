@@ -31,7 +31,7 @@ app.delete('/users/:id', async (req, res) => {
 });
 
 // Atualizar usuário pelo ID
-app.put('/usuarios/:id', async (req, res) => {
+app.put('/users/:id', async (req, res) => {
   const { id } = req.params;
   const { name, email } = req.body;
 
@@ -61,7 +61,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
 });
 
-const PORT = 3000;
+const PORT = 8241;
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
