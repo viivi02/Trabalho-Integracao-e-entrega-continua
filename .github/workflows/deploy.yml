@@ -73,4 +73,4 @@ jobs:
             docker rm crud-app || true
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
-            docker run -d --name crud-app -p 8236:8241 ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
+            docker run -d --name crud-app -p 8236:3000 ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
