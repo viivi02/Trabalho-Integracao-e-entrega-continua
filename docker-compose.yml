@@ -15,7 +15,7 @@ services:
   app:
     build: 
       context: ./backend
-    image: vivii02/trabalhovollovivi:latest
+    image: vivii02/crud-app:latest
     ports:
       - "8236:3000"
     environment:
