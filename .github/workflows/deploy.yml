@@ -46,17 +46,24 @@ jobs:
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            docker stop sonarqube || true
+            docker rm sonarqube || true
             docker run -d --name sonarqube -p 9000:9000 sonarqube
-            sleep 60  # espera o Sonar subir
+            sleep 60  # espera o SonarQube subir
+
             cd ~/app
-            sonar-scanner \
+
+            docker run --rm \
+              -e SONAR_HOST_URL="http://localhost:9000" \
+              -e SONAR_LOGIN="admin" \
+              -v "$HOME/app:/usr/src" \
+              sonarsource/sonar-scanner-cli \
               -Dsonar.projectKey=meu-projeto \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=http://localhost:9000 \
+              -Dsonar.sources=/usr/src \
               -Dsonar.login=admin \
               -Dsonar.password=admin
-            docker stop sonarqube && docker rm sonarqube
 
+            docker stop sonarqube && docker rm sonarqube
   deploy:
     needs: sonar-analysis
     runs-on: ubuntu-latest
