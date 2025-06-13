@@ -17,7 +17,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-
       - name: Build da imagem
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest ./backend
 
@@ -30,13 +29,14 @@ jobs:
     steps:
       - name: Checkout do repositório
         uses: actions/checkout@v3
-      - name: Copiar código e docker-compose para servidor remoto
+
+      - name: Copiar arquivos para o servidor remoto
         uses: appleboy/scp-action@v0.1.4
         with:
           host: 201.23.3.86
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
+          source: "./*"
           target: "~/app"
 
       - name: Executar análise SonarQube no servidor remoto
@@ -47,7 +47,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             docker run -d --name sonarqube -p 9000:9000 sonarqube
-            sleep 60  # espera o Sonar subir
+            sleep 60
             cd ~/app
             sonar-scanner \
               -Dsonar.projectKey=meu-projeto \
@@ -62,14 +62,37 @@ jobs:
     runs-on: ubuntu-latest
     if: success()
     steps:
-      - name: Deploy remoto via SSH
+      - name: Deploy remoto via SSH (sem docker-compose)
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SONAR_HOST_URL }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/app
-            docker compose down || true
-            docker compose pull
-            docker compose up -d
+            docker network create appnet || true
+
+            docker stop db || true
+            docker rm db || true
+            docker run -d \
+              --name db \
+              --network appnet \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=postgres \
+              -e POSTGRES_DB=crud_db \
+              -p 8237:5432 \
+              -v ~/app/init.sql:/docker-entrypoint-initdb.d/init.sql \
+              postgres:15
+
+            docker stop crud-app || true
+            docker rm crud-app || true
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
+            docker run -d \
+              --name crud-app \
+              --network appnet \
+              -e PGUSER=postgres \
+              -e PGPASSWORD=postgres \
+              -e PGDATABASE=crud_db \
+              -e PGPORT=5432 \
+              -e PGHOST=db \
+              -p 8236:3000 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
