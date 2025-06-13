@@ -46,23 +46,17 @@ jobs:
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker stop vivi || true
-            docker rm vivi || true
             docker run -d --name sonarqube -p 9000:9000 sonarqube
-            sleep 60  # espera o Sonar subir
+            sleep 60
             cd ~/app
-
-            docker run --rm \
-              -e SONAR_HOST_URL="http://localhost:9000" \
-              -e SONAR_LOGIN="admin" \
-              -v "$HOME/app:/usr/src" \
-              sonarsource/sonar-scanner-cli \
+            sonar-scanner \
               -Dsonar.projectKey=meu-projeto \
-              -Dsonar.sources=/usr/src \
+              -Dsonar.sources=. \
+              -Dsonar.host.url=http://localhost:9000 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
-
             docker stop sonarqube && docker rm sonarqube
+
   deploy:
     needs: sonar-analysis
     runs-on: ubuntu-latest
@@ -75,7 +69,30 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/app
-            docker compose down || true
-            docker compose pull
-            docker compose up -d
+            docker network create appnet || true
+
+            docker stop db || true
+            docker rm db || true
+            docker run -d \
+              --name db \
+              --network appnet \
+              -e POSTGRES_USER=postgres \
+              -e POSTGRES_PASSWORD=postgres \
+              -e POSTGRES_DB=crud_db \
+              -p 8237:5432 \
+              -v ~/app/init.sql:/docker-entrypoint-initdb.d/init.sql \
+              postgres:15
+
+            docker stop crud-app || true
+            docker rm crud-app || true
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
+            docker run -d \
+              --name crud-app \
+              --network appnet \
+              -e PGUSER=postgres \
+              -e PGPASSWORD=postgres \
+              -e PGDATABASE=crud_db \
+              -e PGPORT=5432 \
+              -e PGHOST=db \
+              -p 8236:3000 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
