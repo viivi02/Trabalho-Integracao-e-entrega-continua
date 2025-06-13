@@ -48,7 +48,7 @@ jobs:
           script: |
             docker stop vivi || true
             docker rm vivi || true
-            docker run -d --name vivi -p 9000:9000 sonarqube
+            docker run -d --name sonar-temp -p 9000:9000 sonarqube
             sleep 60  # espera o SonarQube subir
 
             cd ~/app
@@ -63,7 +63,7 @@ jobs:
               -Dsonar.login=admin \
               -Dsonar.password=admin
 
-            docker stop vivi && docker rm vivi
+            docker stop sonar-temp && docker rm sonar-temp
   deploy:
     needs: sonar-analysis
     runs-on: ubuntu-latest
