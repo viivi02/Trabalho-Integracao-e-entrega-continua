@@ -46,7 +46,7 @@ jobs:
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker run -d --name sonarqube -p 9000:9000 sonarqube
+            docker run -d --name vivi -p 9000:9000 sonarqube
             sleep 60
             cd ~/app
             sonar-scanner \
@@ -55,7 +55,7 @@ jobs:
               -Dsonar.host.url=http://localhost:9000 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
-            docker stop sonarqube && docker rm sonarqube
+            docker stop vivi && docker rm vivi
 
   deploy:
     needs: sonar-analysis
