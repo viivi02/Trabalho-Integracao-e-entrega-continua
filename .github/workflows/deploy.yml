@@ -46,7 +46,7 @@ jobs:
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker run -d --name vivi -p 9000:9000 sonarqube
+            docker run -d --name vivi -p 8238:9000 sonarqube
             sleep 60
             cd ~/app
             sonar-scanner \
@@ -94,5 +94,5 @@ jobs:
               -e PGDATABASE=crud_db \
               -e PGPORT=5432 \
               -e PGHOST=db \
-              -p 8236:3000 \
+              -p 8238:3000 \
               ${{ secrets.DOCKERHUB_USERNAME }}/crud-app:latest
