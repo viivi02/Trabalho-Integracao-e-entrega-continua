@@ -72,7 +72,7 @@ jobs:
             docker network create vivi-net || true
 
             docker stop vivi-mysql || true
-            docker rm vivi-mysql || true
+            docker rm -f vivi-mysql || true
 
             docker run -d \
               --name vivi-mysql \
@@ -83,7 +83,8 @@ jobs:
               mysql:8.0
 
             docker stop vivi || true
-            docker rm vivi || true
+            docker rm -f vivi || true
+            docker ps -a --filter "name=vivi"
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
