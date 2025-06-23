@@ -57,48 +57,48 @@ jobs:
               -Dsonar.password=admin
             docker stop sonarqube-vivi && docker rm sonarqube-vivi
 
-deploy:
-  needs: sonar-analysis
-  runs-on: ubuntu-latest
-  if: success()
-  steps:
-    - name: Deploy remoto via SSH (sem docker-compose)
-      uses: appleboy/ssh-action@master
-      with:
-        host: 201.23.3.86
-        username: aluno
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          docker network create vivi-net || true
+  deploy:
+    needs: sonar-analysis
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Deploy remoto via SSH (sem docker-compose)
+        uses: appleboy/ssh-action@master
+        with:
+          host: 201.23.3.86
+          username: aluno
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker network create vivi-net || true
 
-          docker stop vivi-mysql || true
-          docker rm vivi-mysql || true
+            docker stop vivi-mysql || true
+            docker rm vivi-mysql || true
 
-          docker run -d \
-            --name vivi-mysql \
-            --network vivi-net \
-            -e MYSQL_ROOT_PASSWORD=senha \
-            -e MYSQL_DATABASE=meubanco \
-            -p 8237:3306 \
-            mysql:8.0
+            docker run -d \
+              --name vivi-mysql \
+              --network vivi-net \
+              -e MYSQL_ROOT_PASSWORD=senha \
+              -e MYSQL_DATABASE=meubanco \
+              -p 8237:3306 \
+              mysql:8.0
 
-          docker stop vivi || true
-          docker rm vivi || true
+            docker stop vivi || true
+            docker rm vivi || true
 
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-          docker run -d \
-            --name vivi \
-            --network vivi-net \
-            -e DB_HOST=vivi-mysql \
-            -p 8238:5000 \
-            ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
+            docker run -d \
+              --name vivi \
+              --network vivi-net \
+              -e DB_HOST=vivi-mysql \
+              -p 8238:5000 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-          echo "=== Containers ativos após deploy ==="
-          docker ps
+            echo "=== Containers ativos após deploy ==="
+            docker ps
 
-          echo "=== Logs do container vivi (app) ==="
-          docker logs vivi --tail 50 || echo "Container vivi não está rodando"
+            echo "=== Logs do container vivi (app) ==="
+            docker logs vivi --tail 50 || echo "Container vivi não está rodando"
 
-          echo "=== Logs do container vivi-mysql (db) ==="
-          docker logs vivi-mysql --tail 50 || echo "Container vivi-mysql não está rodando"
+            echo "=== Logs do container vivi-mysql (db) ==="
+            docker logs vivi-mysql --tail 50 || echo "Container vivi-mysql não está rodando"
