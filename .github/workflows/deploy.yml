@@ -91,14 +91,9 @@ jobs:
               --name vivi \
               --network vivi-net \
               -e DB_HOST=vivi-mysql \
+              -e DB_USER=root \
+              -e DB_PASSWORD=senha \
+              -e DB_NAME=meubanco \
               -p 8238:5000 \
               ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-            echo "=== Containers ativos após deploy ==="
-            docker ps
-
-            echo "=== Logs do container vivi (app) ==="
-            docker logs vivi --tail 50 || echo "Container vivi não está rodando"
-
-            echo "=== Logs do container vivi-mysql (db) ==="
-            docker logs vivi-mysql --tail 50 || echo "Container vivi-mysql não está rodando"
