@@ -74,7 +74,7 @@ jobs:
             docker stop vivi-mysql || true
             docker rm vivi-mysql || true
 
-            docker run \
+            docker run -d \
               --name vivi-mysql \
               --network vivi-net \
               -e MYSQL_ROOT_PASSWORD=senha \
