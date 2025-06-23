@@ -50,9 +50,6 @@ jobs:
             sleep 60
             cd ~/app
             sonar-scanner \
-              -Dsonar.projectKey=vivi-projeto \
-              -Dsonar.sources=. \
-              -Dsonar.host.url=http://localhost:9000 \
               -Dsonar.login=admin \
               -Dsonar.password=admin
             docker stop sonarqube-vivi && docker rm sonarqube-vivi
