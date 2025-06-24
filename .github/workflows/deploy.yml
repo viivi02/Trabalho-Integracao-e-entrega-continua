@@ -59,40 +59,59 @@ jobs:
     runs-on: ubuntu-latest
     if: success()
     steps:
-      - name: Deploy remoto via SSH (sem docker-compose)
+      - name: Deploy remoto via SSH
         uses: appleboy/ssh-action@master
         with:
           host: 201.23.3.86
           username: aluno
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            echo "🔧 Limpando containers antigos..."
             docker network create vivi-net || true
 
             docker stop vivi-mysql || true
-            docker rm -f vivi-mysql || true
+            docker rm vivi-mysql || true
+
             docker stop vinicius || true
-            docker rm -f vinicius || true
+            docker rm vinicius || true
 
-            docker run -d --name vivi-mysql --network vivi-net -e MYSQL_ROOT_PASSWORD=senha -e MYSQL_DATABASE=meubanco -p 8239:3306 mysql:8.0
+            echo "🗄️ Subindo MySQL..."
+            docker run -d --name vivi-mysql --network vivi-net \
+              -e MYSQL_ROOT_PASSWORD=senha \
+              -e MYSQL_DATABASE=meubanco \
+              -p 8239:3306 \
+              mysql:8.0
 
-            # Espera MySQL ficar pronto
+            echo "⏳ Aguardando MySQL ficar pronto..."
             until docker exec vivi-mysql mysqladmin ping -h "127.0.0.1" --silent; do
-              echo "Esperando MySQL iniciar..."
+              echo "⏳ Aguardando..."
               sleep 5
             done
 
+            echo "⬇️ Baixando imagem mais recente do app..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-            docker run -d --name vinicius --network vivi-net -e DB_HOST=vivi-mysql -e DB_USER=root -e DB_PASSWORD=senha -e DB_NAME=meubanco -p 8240:5000 ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
+            echo "🚀 Subindo aplicação..."
+            docker run -d --name vinicius --network vivi-net \
+              -e DB_HOST=vivi-mysql \
+              -e DB_USER=root \
+              -e DB_PASSWORD=senha \
+              -e DB_NAME=meubanco \
+              -p 8240:5000 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-            # Logs para debug
+            echo "📝 Logs MySQL:"
             docker logs vivi-mysql --tail 50
+
+            echo "📝 Logs da aplicação:"
             docker logs vinicius --tail 50
 
-            # Verifica status do container app
+            echo "✅ Verificando status da aplicação..."
             status=$(docker inspect --format='{{.State.ExitCode}}' vinicius)
             if [ "$status" != "0" ]; then
-              echo "Erro: container vinicius saiu com exit code $status"
+              echo "❌ Erro: container vinicius saiu com exit code $status"
               docker logs vinicius
               exit 1
+            else
+              echo "🎉 Deploy realizado com sucesso!"
             fi
