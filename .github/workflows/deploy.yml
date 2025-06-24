@@ -70,31 +70,29 @@ jobs:
 
             docker stop vivi-mysql || true
             docker rm -f vivi-mysql || true
+            docker stop vinicius || true
+            docker rm -f vinicius || true
 
-            docker run -d \
-              --name vivi-mysql \
-              --network vivi-net \
-              -e MYSQL_ROOT_PASSWORD=senha \
-              -e MYSQL_DATABASE=meubanco \
-              -p 8239:3306 \
-              mysql:8.0
+            docker run -d --name vivi-mysql --network vivi-net -e MYSQL_ROOT_PASSWORD=senha -e MYSQL_DATABASE=meubanco -p 8239:3306 mysql:8.0
 
-            docker stop vivi || true
-            docker rm -f vivi || true
-            docker ps -a --filter "name=vivi"
-            docker ps
-            docker logs vivi --tail 50
-            docker logs vivi-mysql --tail 50
+            # Espera MySQL ficar pronto
+            until docker exec vivi-mysql mysqladmin ping -h "127.0.0.1" --silent; do
+              echo "Esperando MySQL iniciar..."
+              sleep 5
+            done
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
-            docker run -d \
-              --name vivi \
-              --network vivi-net \
-              -e DB_HOST=vivi-mysql \
-              -e DB_USER=root \
-              -e DB_PASSWORD=senha \
-              -e DB_NAME=meubanco \
-              -p 8240:5000 \
-              ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
+            docker run -d --name vinicius --network vivi-net -e DB_HOST=vivi-mysql -e DB_USER=root -e DB_PASSWORD=senha -e DB_NAME=meubanco -p 8240:5000 ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
+            # Logs para debug
+            docker logs vivi-mysql --tail 50
+            docker logs vinicius --tail 50
+
+            # Verifica status do container app
+            status=$(docker inspect --format='{{.State.ExitCode}}' vinicius)
+            if [ "$status" != "0" ]; then
+              echo "Erro: container vinicius saiu com exit code $status"
+              docker logs vinicius
+              exit 1
+            fi
