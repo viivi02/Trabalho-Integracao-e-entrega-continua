@@ -76,12 +76,15 @@ jobs:
               --network vivi-net \
               -e MYSQL_ROOT_PASSWORD=senha \
               -e MYSQL_DATABASE=meubanco \
-              -p 8237:3306 \
+              -p 8239:3306 \
               mysql:8.0
 
             docker stop vivi || true
             docker rm -f vivi || true
             docker ps -a --filter "name=vivi"
+            docker ps
+            docker logs vivi --tail 50
+            docker logs vivi-mysql --tail 50
 
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
@@ -92,6 +95,6 @@ jobs:
               -e DB_USER=root \
               -e DB_PASSWORD=senha \
               -e DB_NAME=meubanco \
-              -p 8238:5000 \
+              -p 8240:5000 \
               ${{ secrets.DOCKERHUB_USERNAME }}/vivi:latest
 
